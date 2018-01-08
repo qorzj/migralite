@@ -2,14 +2,20 @@
 """
 migralite
 ~~~~~~~~
+
 migralite is a simple mysql migration tool.
+
 Setup
 -----
+
 .. code-block:: bash
+
     > pip install migralite
+
 Links
 -----
 * `README <https://github.com/qorzj/migralite>`_
+
 """
 
 from setuptools import setup
