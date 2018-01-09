@@ -14,6 +14,7 @@ def print_help():
 
         -t    : version to be updated to, default is the max version
         -e    : current env, default is empty
+        -s    : version to be updated from, default is the current version plus 1
 
         -h    : show help information
     """
@@ -52,6 +53,10 @@ def run(*a, **b):
     else:
         start_version = 0
         cur.execute("INSERT INTO _migrate_ VALUES(0)")
+
+    if b.get('s', None) is not None:
+        start_version = int(b['s'])
+
     print('Start Version: %d' % start_version)
 
     sqls = [(fetch_version(x), x) for x in os.listdir(sql_dir) if fetch_version(x)]
