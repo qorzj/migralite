@@ -7,14 +7,14 @@ from migralite.utils import fetch_version
 
 def print_help():
     text = """
-    
+
     migralite [args] sql_dir
         -i    : mysql user@host:port/database, default user is root
         -p    : mysql password
-        
+
         -t    : version to be updated to, default is the max version
         -e    : current env, default is empty
-    
+
         -h    : show help information
     """
     print(text)
@@ -77,7 +77,8 @@ def run(*a, **b):
             if isinstance(item, MySQLCursor):
                 _ = list(item)
                 print(item)
-                print(_) if len(_) < 10 else (print(_), print('... (total: %d rows) ...' % len(_)))
+                print(_[:10])
+                if len(_) > 10: print('... (total: %d rows) ...' % len(_))
 
         conn.commit()
 

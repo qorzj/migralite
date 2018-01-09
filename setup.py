@@ -3,7 +3,7 @@
 migralite
 ~~~~~~~~
 
-migralite is a simple mysql migration tool.
+Migralite is a simple mysql migration tool.
 
 Setup
 -----
