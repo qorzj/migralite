@@ -42,7 +42,7 @@ version = str(ast.literal_eval(
 setup(
         name = 'migralite',
         version=version,
-        description='migralite is a simple mysql migration tool',
+        description='migralite is a simple mysql migration tool (python3 only)',
         long_description=__doc__,
         url='https://github.com/qorzj/migralite',
         author='qorzj',

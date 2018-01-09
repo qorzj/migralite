@@ -7,6 +7,9 @@ Setup
 pip install migralite
 ```
 
+#### Notice
+Since mysql-connect does not support python2.7, migralite only supports python3.
+
 #### Example 1:
 ```bash
 $ tree testsqls
