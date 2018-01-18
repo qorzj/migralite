@@ -21,10 +21,30 @@ def print_help():
     print(text)
 
 
+def rewrite_by_java(arg_dict, confname):
+    url = username = password = ''
+    for line in open(confname).read().splitlines():
+        if not line or line[0] == '#':
+            continue
+        if line.startswith('spring.datasource.url='):
+            url = line.split(':mysql://', 1)[-1].split('?', 1)[0]
+        if line.startswith('spring.datasource.hikari.username='):
+            username = line.split('=', 1)[-1]
+        if line.startswith('spring.datasource.hikari.password='):
+            password = line.split('=', 1)[-1]
+
+    arg_dict['i'] = '%s@%s' % (username, url)
+    arg_dict['p'] = password
+
+
 def run(*a, **b):
     if 'h' in b or 'help' in b or not b:
         return print_help()
+
     sql_dir = a[0] if a else '.'
+    if 'j' in b:
+        rewrite_by_java(b, b['j'])  # for java-springboot
+
     full_host = b['i']
     if '@' in full_host:
         username, full_host = full_host.split('@', 1)
