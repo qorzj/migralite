@@ -5,6 +5,7 @@ from mysql.connector.cursor import MySQLCursor
 
 from migralite.utils import fetch_version
 
+
 def print_help():
     text = """
 
@@ -15,6 +16,7 @@ def print_help():
         -t    : version to be updated to, default is the max version
         -e    : current env, default is empty
         -s    : version to be updated from, default is the current version plus 1
+        -d    : drop database when setup
 
         -h    : show help information
     """
@@ -62,6 +64,12 @@ def run(*a, **b):
 
     conn = mysql.connector.connect(user=username, password=password, host=host, port=int(port), database=database)
     cur = conn.cursor()
+
+    if 'd' in b:
+        cur.execute("DROP DATABASE IF EXISTS {}".format(database))
+        cur.execute("CREATE DATABASE {}".format(database))
+        cur.execute("USE {}".format(database))
+
     cur.execute("""CREATE TABLE IF NOT EXISTS `_migrate_` (
             `version` int(11) unsigned NOT NULL,
             PRIMARY KEY (`version`)
@@ -113,4 +121,4 @@ def run(*a, **b):
 
 
 def entrypoint():
-    lesscli.run(run)
+    lesscli.run(run, single='d')
