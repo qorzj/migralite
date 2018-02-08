@@ -7,4 +7,4 @@ CREATE TABLE `tbl_acl` (
   `remark` text COMMENT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniKey` (`url`,`method`,`serviceName`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8

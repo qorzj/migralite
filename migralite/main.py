@@ -19,6 +19,7 @@ def print_help():
         -d    : drop database when setup
 
         -h    : show help information
+        -o    : debug file name, output full sql content
     """
     print(text)
 
@@ -89,8 +90,6 @@ def run(*a, **b):
 
     sqls = [(fetch_version(x), x) for x in os.listdir(sql_dir) if fetch_version(x)]
     sqls.sort(key = lambda x: x[0][0])
-    querys = []
-    max_version = 0
     for k, fname in sqls:
         content = open(os.path.join(sql_dir, fname)).read()
         version, onlys, excepts = k
@@ -100,20 +99,22 @@ def run(*a, **b):
         if (onlys is not None and cur_env not in onlys) or \
                 (excepts is not None and cur_env in excepts):
             continue
-        querys.append(content)
-        max_version = version
+        if 'o' in b:  # for debug
+            with open(b['o'], 'w') as fdbg:
+                fdbg.write(content)
 
-    if querys:
-        querys.append("UPDATE _migrate_ SET version=%d;" % max_version)
-        query_text = '\n'.join(querys)
-        for item in cur.execute(query_text, multi=True):
+        for item in cur.execute(content, multi=True):
             if isinstance(item, MySQLCursor):
                 _ = list(item)
                 print(item)
                 print(_[:10])
                 if len(_) > 10: print('... (total: %d rows) ...' % len(_))
 
-        conn.commit()
+        version_sql = "UPDATE _migrate_ SET version=%d;" % version
+        print(version_sql)
+        cur.execute(version_sql)
+
+    conn.commit()
 
     cur.close()
     conn.close()
