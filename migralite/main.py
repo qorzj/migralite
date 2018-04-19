@@ -103,12 +103,16 @@ def run(*a, **b):
             with open(b['o'], 'w') as fdbg:
                 fdbg.write(content)
 
-        for item in cur.execute(content, multi=True):
-            if isinstance(item, MySQLCursor):
-                _ = list(item)
-                print(item)
-                print(_[:10])
-                if len(_) > 10: print('... (total: %d rows) ...' % len(_))
+        try:
+            for item in cur.execute(content, multi=True):
+                if isinstance(item, MySQLCursor):
+                    _ = list(item)
+                    print(item)
+                    print(_[:10])
+                    if len(_) > 10: print('... (total: %d rows) ...' % len(_))
+        except:
+            if isinstance(item, MySQLCursor): print('Failed Statement:', item.statement)
+            raise
 
         version_sql = "UPDATE _migrate_ SET version=%d;" % version
         print(version_sql)
