@@ -40,6 +40,22 @@ def rewrite_by_java(arg_dict, confname):
     arg_dict['p'] = password
 
 
+def split_sql_content(content):
+    sb = []
+    for line in content.splitlines():
+        s = line.strip()
+        if s.startswith('#') or (s.startswith('/*') and s.endswith('*/')):
+            yield '\n'.join(sb)
+            sb = []
+        elif s.startswith('/*'):
+            yield '\n'.join(sb)
+            sb = [line]
+        else:
+            sb.append(line)
+    if sb:
+        yield '\n'.join(sb)
+
+
 def run(*a, **b):
     if 'h' in b or 'help' in b or not b:
         return print_help()
@@ -103,13 +119,16 @@ def run(*a, **b):
             with open(b['o'], 'w') as fdbg:
                 fdbg.write(content)
 
+        item = None
         try:
-            for item in cur.execute(content, multi=True):
-                if isinstance(item, MySQLCursor):
-                    _ = list(item)
-                    print(item)
-                    print(_[:10])
-                    if len(_) > 10: print('... (total: %d rows) ...' % len(_))
+            for subcontent in split_sql_content(content):
+                if not subcontent.strip(): continue
+                for item in cur.execute(subcontent, multi=True):
+                    if isinstance(item, MySQLCursor):
+                        _ = list(item)
+                        print(item)
+                        print(_[:10])
+                        if len(_) > 10: print('... (total: %d rows) ...' % len(_))
         except:
             if isinstance(item, MySQLCursor): print('Failed Statement:', item.statement)
             raise
