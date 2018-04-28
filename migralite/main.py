@@ -44,7 +44,7 @@ def split_sql_content(content):
     sb = []
     for line in content.splitlines():
         s = line.strip()
-        if s.startswith('#') or (s.startswith('/*') and s.endswith('*/')):
+        if s.startswith('#') or (s.startswith('/*') and s.endswith(('*/', '*/;'))):
             yield '\n'.join(sb)
             sb = []
         elif s.startswith('/*'):
