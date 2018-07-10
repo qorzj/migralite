@@ -54,7 +54,7 @@ setup(
             ],
         keywords='migralite mysql migrate',
         packages = ['migralite'],
-        install_requires=['lesscli', 'mysql-connector==2.1.4'],
+        install_requires=['lesscli', 'mysql-connector'],
 
         cmdclass={'install': MyInstall},
         entry_points={
