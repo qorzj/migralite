@@ -20,6 +20,8 @@ def print_help():
 
         -h    : show help information
         -o    : debug file name, output full sql content
+        
+        -J    : another java properties to compare with
     """
     print(text)
 
@@ -54,6 +56,20 @@ def split_sql_content(content):
             sb.append(line)
     if sb:
         yield '\n'.join(sb)
+
+
+def compare(arg_dict, cur, rows=None):
+    dbname = arg_dict['i'].rsplit('/', 1)[-1]
+    cur.execute("select TABLE_NAME, COLUMN_NAME, IS_NULLABLE, DATA_TYPE, COLUMN_TYPE, COLUMN_KEY "
+                " from information_schema.COLUMNS where TABLE_SCHEMA='{}' AND TABLE_NAME!='_migrate_' "
+                " order by TABLE_NAME, COLUMN_NAME".format(dbname))
+    if rows:
+        from unittest import TestCase
+        rows2 = list(cur)
+        TestCase().assertListEqual(rows, rows2)
+        return rows
+    else:
+        return list(cur)
 
 
 def run(*a, **b):
@@ -138,6 +154,11 @@ def run(*a, **b):
         cur.execute(version_sql)
 
     conn.commit()
+
+    if 'J' in b:
+        rows = compare(b, cur)
+        rewrite_by_java(b, b['J'])
+        compare(b, cur, rows)
 
     cur.close()
     conn.close()
