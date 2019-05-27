@@ -19,27 +19,50 @@ def print_help():
         -d    : drop database when setup
 
         -h    : show help information
+        -m    : dump remote database schema
         -o    : debug file name, output full sql content
         
+        -j    : use java properties
         -J    : another java properties to compare with
     """
     print(text)
 
 
-def rewrite_by_java(arg_dict, confname):
-    url = username = password = ''
-    for line in open(confname).read().splitlines():
-        if not line or line[0] == '#':
-            continue
-        if line.startswith('spring.datasource.url='):
-            url = line.split(':mysql://', 1)[-1].split('?', 1)[0]
-        if line.startswith('spring.datasource.hikari.username='):
-            username = line.split('=', 1)[-1]
-        if line.startswith('spring.datasource.hikari.password='):
-            password = line.split('=', 1)[-1]
+def connect_mysql(arg_dict, jconfname=None):
+    if jconfname:
+        url = username = password = ''
+        for line in open(jconfname).read().splitlines():
+            if not line or line[0] == '#':
+                continue
+            if line.startswith('spring.datasource.url='):
+                url = line.split(':mysql://', 1)[-1].split('?', 1)[0]
+            if line.startswith('spring.datasource.hikari.username='):
+                username = line.split('=', 1)[-1]
+            if line.startswith('spring.datasource.hikari.password='):
+                password = line.split('=', 1)[-1]
 
-    arg_dict['i'] = '%s@%s' % (username, url)
-    arg_dict['p'] = password
+        if not username or not url or not password:
+            print('Java properties wrong format: {}'.format(jconfname))
+            exit(1)
+
+        arg_dict['i'] = '%s@%s' % (username, url)
+        arg_dict['p'] = password
+
+    full_host = arg_dict['i']
+    if '@' in full_host:
+        username, full_host = full_host.split('@', 1)
+    else:
+        username = 'root'
+    full_host, database = full_host.split('/', 1)
+    if ':' in full_host:
+        host, port = full_host.split(':', 1)
+    else:
+        host, port = full_host, '3306'
+
+    password = arg_dict.get('p', '')
+    conn = mysql.connector.connect(user=username, password=password, host=host, port=int(port), database=database)
+    cur = conn.cursor()
+    return conn, cur, database
 
 
 def split_sql_content(content):
@@ -77,43 +100,40 @@ def run(*a, **b):
         return print_help()
 
     sql_dir = a[0] if a else '.'
-    if 'j' in b:
-        rewrite_by_java(b, b['j'])  # for java-springboot
 
-    full_host = b['i']
-    if '@' in full_host:
-        username, full_host = full_host.split('@', 1)
-    else:
-        username = 'root'
-    full_host, database = full_host.split('/', 1)
-    if ':' in full_host:
-        host, port = full_host.split(':', 1)
-    else:
-        host, port = full_host, '3306'
+    jconfname = b.get('j')  # for java-springboot
+    conn, cur, database = connect_mysql(b, jconfname)
 
-    password = b.get('p', '')
     to_version = b.get('t', None)
     cur_env = b.get('e', '_!_').lower()
 
-    conn = mysql.connector.connect(user=username, password=password, host=host, port=int(port), database=database)
-    cur = conn.cursor()
+    if 'J' in b:
+        rows = compare(b, cur)
+        conn2, cur2, _ = connect_mysql(b, b['J'])
+        compare(b, cur2, rows)
+        print('---- Compare Passed. ----')
+        cur.close()
+        conn.close()
+        cur2.close()
+        conn2.close()
+        return
 
     if 'd' in b:
         cur.execute("DROP DATABASE IF EXISTS {}".format(database))
         cur.execute("CREATE DATABASE {}".format(database))
         cur.execute("USE {}".format(database))
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS `_migrate_` (
+    cur.execute("""CREATE TABLE IF NOT EXISTS `{}._migrate_` (
             `version` int(11) unsigned NOT NULL,
             PRIMARY KEY (`version`)
-        ) """)
-    cur.execute("SELECT version FROM _migrate_ LIMIT 1")
+        ) """.format(database))
+    cur.execute("SELECT version FROM `{}._migrate_` LIMIT 1".format(database))
     row = list(cur)
     if row:
         start_version = row[0][0]
     else:
         start_version = 0
-        cur.execute("INSERT INTO _migrate_ VALUES(0)")
+        cur.execute("INSERT INTO `{}._migrate_` VALUES(0)".format(database))
 
     if b.get('s', None) is not None:
         start_version = int(b['s'])
@@ -149,16 +169,11 @@ def run(*a, **b):
             if isinstance(item, MySQLCursor): print('Failed Statement:', item.statement)
             raise
 
-        version_sql = "UPDATE _migrate_ SET version=%d;" % version
+        version_sql = "UPDATE `%s._migrate_` SET version=%d;" % (database, version)
         print(version_sql)
         cur.execute(version_sql)
 
     conn.commit()
-
-    if 'J' in b:
-        rows = compare(b, cur)
-        rewrite_by_java(b, b['J'])
-        compare(b, cur, rows)
 
     cur.close()
     conn.close()
