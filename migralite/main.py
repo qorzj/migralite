@@ -123,17 +123,17 @@ def run(*a, **b):
         cur.execute("CREATE DATABASE {}".format(database))
         cur.execute("USE {}".format(database))
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS `{}._migrate_` (
+    cur.execute("""CREATE TABLE IF NOT EXISTS {}._migrate_ (
             `version` int(11) unsigned NOT NULL,
             PRIMARY KEY (`version`)
         ) """.format(database))
-    cur.execute("SELECT version FROM `{}._migrate_` LIMIT 1".format(database))
+    cur.execute("SELECT version FROM {}._migrate_ LIMIT 1".format(database))
     row = list(cur)
     if row:
         start_version = row[0][0]
     else:
         start_version = 0
-        cur.execute("INSERT INTO `{}._migrate_` VALUES(0)".format(database))
+        cur.execute("INSERT INTO {}._migrate_ VALUES(0)".format(database))
 
     if b.get('s', None) is not None:
         start_version = int(b['s'])
@@ -169,7 +169,7 @@ def run(*a, **b):
             if isinstance(item, MySQLCursor): print('Failed Statement:', item.statement)
             raise
 
-        version_sql = "UPDATE `%s._migrate_` SET version=%d;" % (database, version)
+        version_sql = "UPDATE %s._migrate_ SET version=%d;" % (database, version)
         print(version_sql)
         cur.execute(version_sql)
 
